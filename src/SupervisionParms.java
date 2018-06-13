@@ -13,6 +13,8 @@ public class SupervisionParms
     //hashmap contains descriptors of all sensors to use regularly
     protected HashMap<String,Descriptor> Descriptors;
 
+
+
     // Getters and setters
     public HashMap<String, Descriptor> getDescriptors() {
         return Descriptors;
@@ -41,9 +43,9 @@ public class SupervisionParms
     //add a sensor reference
     public void addSensor(ISensor sensor)
     {
-        if(Sensors.containsKey(sensor.getDescriptor().getID()))
+        if(Sensors.containsKey(sensor.getDescriptor().getId()))
             return;
-        Sensors.put(sensor.getDescriptor().getID(),sensor);
+        Sensors.put(sensor.getDescriptor().getId(),sensor);
     }
 
     //get descriptor  by ID
@@ -57,8 +59,8 @@ public class SupervisionParms
     //add a descriptor
     public void addDescriptor(Descriptor descriptor)
     {
-        if(Descriptors.containsKey(descriptor.getID()))
+        if(Descriptors.containsKey(descriptor.getId()))
             return;
-        Descriptors.put(descriptor.getID(),descriptor);
+        Descriptors.put(descriptor.getId(),descriptor);
     }
 }
