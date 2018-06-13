@@ -7,18 +7,16 @@ import java.util.ArrayList;
 public class connectSink extends Thread {
 
     ServerSocket connectDonner;
-    ObjectInputStream ois ;
     DataInputStream din ;
     DataOutputStream dout;
-    BufferedReader br;
     int type;
     String positionx;
     String positiony;
     Point position;
     int x,y;
+    String idmin;
     ArrayList<Descriptor> capteurs ;
-    ArrayList<Distance> capteurvoisins;
-    // int[][] distance;
+
     public connectSink(ServerSocket connectDonner) {
         this.connectDonner=connectDonner;
     }
@@ -26,11 +24,9 @@ public class connectSink extends Thread {
         while(true){
             try {
                 Socket s=connectDonner.accept();
-                ois=new ObjectInputStream(s.getInputStream());
                 din = new DataInputStream(s.getInputStream()); // TODO Auto-generated catch block
                 dout=new DataOutputStream(s.getOutputStream());
-                br=new BufferedReader(new InputStreamReader(System.in));
-                String msgin="",msgout="";
+                String msgin="";
                 while((msgin=din.readUTF())!=null)
                 {
                     String tab[];
@@ -43,6 +39,10 @@ public class connectSink extends Thread {
                     y=Integer.parseInt(positiony);
                     position.x=x;
                     position.y=y;
+                    double min=0;
+                    // id for the closest sensor
+                    idmin=null;
+                    int i=0;
                     for ( Descriptor capteur :capteurs)
                     {
                         if(capteur.getType()==type)
@@ -51,31 +51,32 @@ public class connectSink extends Thread {
                             {
                                 String id=capteur.getId();
                                 double distance=distance(position,capteur.getPosition());
-                                Distance e=new Distance(id,distance);
-                                capteurvoisins.add(e);
+                                //if the position in the sensor range
+                                if(distance<=capteur.getRange()) {
+
+                                    if(i==0)
+                                    {
+                                        min=distance;
+                                        idmin=id;
+                                    }
+                                    else{
+                                        if(distance<min)
+                                        {
+                                            min=distance;
+                                            idmin=id;
+                                        }
+                                    }
+
+                                }
                             }
                         }
                     }
                 }
-                double min=0;
-                String idmin=null;
-                int i=0;
-                for(Distance dist:capteurvoisins)
-                {
-                    if(i==0)
-                    {
-                        idmin=dist.getId();
-                        min=dist.getDistance();
-                    }
-                    else{
-                        if(dist.getDistance()<min)
-                        {
-                            min=dist.getDistance();
-                            idmin=dist.getId();
-                        }
-                    }
-                }
-                String reponse="sensor="+idmin;
+                String reponse;
+                if(idmin==null)
+                 reponse="no sensor capable of serving you.";
+                else{
+                reponse="sensor="+idmin;}
                 dout.writeUTF(reponse);
                 dout.flush();
             } catch (IOException e) {
@@ -88,33 +89,9 @@ public class connectSink extends Thread {
     //method calcul la distance
     public double distance(Point a,Point b)
     {
-        return Math.sqrt((a.getX()-b.getX()) + (a.getY()-b.getY()));
+        return Math.sqrt(Math.pow((a.getX() - b.getX()), 2) + Math.pow((a.getY() - b.getY()), 2));
     }
 
-    private static class Distance {
 
-        double distance;
-        String id;
-        public Distance( String id,double distance) {
-            this.distance=distance;
-            this.id=id;
-        }
-        public void setDistance(double distance)
-        {
-            this.distance=distance;
-        }
-        public double getDistance()
-        {
-            return distance;
-        }
-        public void setId(String Id)
-        {
-            this.id=Id;
-        }
-        public String getId()
-        {
-            return id;
-        }
-    }
 
 }
