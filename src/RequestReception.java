@@ -2,19 +2,19 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class RequestHandling extends Thread
+public class RequestReception extends Thread
 {
     ServerSocket connectsink;
     Socket socket;
     SupervisionParms supervisionParms;
-    public RequestHandling()
+    public RequestReception()
     { }
     public void run()
     {
         while(true) {
             try {
           socket = connectsink.accept();
-                Thread t=new RequestReception(connectsink,socket, supervisionParms);
+                Thread t=new RequestHandling(socket);
             t.start();
             } catch (IOException e) {
                 e.printStackTrace();

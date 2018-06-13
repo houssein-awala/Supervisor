@@ -9,101 +9,118 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RequestReception extends Thread {
+public class RequestHandling extends Thread {
 
-    ServerSocket connectsink;
+
     DataInputStream din ;
     DataOutputStream dout;
     int type;
-    String positionx;
-    String positiony;
+    int positionx,positiony;  //coordonnee of point position
     Point position;
-    //coordonnee of point position
-    int x,y;
-    String idmin;
+    Double calcul;
+    String idSensor;
     SupervisionParms supervisionParms;
-    ArrayList<Descriptor> capteurs ;
-    Socket s;
+    Socket socket;
     static int idRequest=0;
 
-    public RequestReception(ServerSocket connectsink,Socket s,SupervisionParms supervisionParms) {
-        this.connectsink=connectsink;
-        this.s=s;
-       supervisionParms=new SupervisionParms();
+    public RequestHandling(Socket socket) {
+        this.socket=socket;
     }
     // this method return id of closest sensor
-    public String SearchIdSensor() throws IOException {
-        DataInputStream din = new DataInputStream(s.getInputStream()); // TODO Auto-generated catch block
+    public String getIdSensor() throws IOException {
+        din = new DataInputStream(socket.getInputStream()); // TODO Auto-generated catch block
         String request="";
         while((request=din.readUTF())!=null)
         {
-            String tab[];
-            tab = request.split("-");
+            //read request and split with separator
+            readLine(request);
+            supervisionParms=new SupervisionParms();
+            idSensor=null;// id for the closest sensor
 
-            type=Integer.parseInt(tab[0]);
-            positionx=tab[1];
-            positiony=tab[2];
-            x=Integer.parseInt(positionx);
-            y=Integer.parseInt(positiony);
-            position.x=x;
-            position.y=y;
-            double distance_min=0;
-            // id for the closest sensor
-            idmin=null;
-            int i=0;
-            HashMap<String, Descriptor> Descriptors=supervisionParms.getDescriptors();
-
-            for (Map.Entry<String,Descriptor> entry :Descriptors.entrySet())
+            //method search sensor suitable for request
+            SearchSensor();
+            //gives the request an id
+           givesIdRequest(idSensor,idRequest);
+        }
+        return idSensor;
+    }
+    //this method for read line
+    public void readLine(String line)
+    {
+        String tab[];
+        tab = line.split("-");
+        type=Integer.parseInt(tab[0]);
+        positionx=Integer.parseInt(tab[1]);
+        positiony=Integer.parseInt(tab[2]);
+        position.x=positionx;
+        position.y=positiony;
+    }
+    //this method search sensor suitable for request
+    private void SearchSensor() {
+        int i=0;
+        double distance_min=0;
+        HashMap<String, Descriptor> Descriptors=supervisionParms.getDescriptors();
+        for (Map.Entry<String,Descriptor> entry :Descriptors.entrySet())
+        {
+          //  if he is the same type
+            if(entry.getValue().getType()==type)
             {
-                if(entry.getValue().getType()==type)
+                //if the capacity is not full
+                if(entry.getValue().getCapacity()<entry.getValue().getNbRequest())
                 {
-                    if(entry.getValue().getCapacity()<entry.getValue().getNbRequest())
-                    {
-                        String id=entry.getValue().getId();
-                        double distance=distance(position,entry.getValue().getPosition());
-                        //if the position in the sensor range
-                        if(distance<=entry.getValue().getRange()) {
-
-                            if(i==0)
-                            {
-                                distance_min=distance+entry.getValue().getLastRequestServed();
-                                idmin=id;
-                            }
-                            else{
-                                if((distance+entry.getValue().getLastRequestServed())< distance_min)
-                                {
-                                    distance_min=distance+entry.getValue().getLastRequestServed();
-                                    idmin=id;
-                                }
-                            }
-
+                    String id=entry.getValue().getId();
+                    double distance=distance(position,entry.getValue().getPosition());
+                    //if the position in the sensor range
+                    if(distance<=entry.getValue().getRange()) {
+                        calcul=distance+entry.getValue().getLastRequestServed();
+                        if(i==0)
+                        {
+                            distance_min=calcul;
+                            idSensor=id;
                         }
+                        else{
+                            if(calcul< distance_min)
+                            {
+                                distance_min=calcul;
+                                idSensor=id;
+                            }
+                        }
+                        i++;
                     }
                 }
             }
-            supervisionParms.getDescriptor(idmin).setLastRequestServed(idRequest);
         }
-        return idmin;
     }
+
+    // this method gives for each request id
+    public void givesIdRequest(String idSensor,int idRequest)
+    {
+        supervisionParms.getDescriptor(idSensor).setLastRequestServed(idRequest);
+    }
+
     //this method for send reponse
-    public void jfhjh(String idSensormin1) throws IOException {
-        DataOutputStream dout=new DataOutputStream(s.getOutputStream());
+    public void SendReponse(String idSensor) throws IOException {
+        DataOutputStream dout=new DataOutputStream(socket.getOutputStream());
         String reponse;
 
         // if no sensor capable of serving
-        if(idSensormin1==null)
+        if(idSensor==null)
             reponse="no sensor capable of serving you.";
         else{
-            reponse="sensor="+idSensormin1;}
+            reponse="sensor="+idSensor;
+        }
         dout.writeUTF(reponse);
         dout.flush();
+        dout.close();
     }
+    //end method SendReponse
+
     public void run(){
         while(true){
             try {
-                 idmin=SearchIdSensor();
+                 idSensor=getIdSensor();
                  idRequest++;
-                jfhjh(idmin);
+                SendReponse(idSensor);
             } catch (IOException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
