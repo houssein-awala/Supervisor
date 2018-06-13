@@ -1,110 +1,26 @@
-import java.awt.*;
-import java.io.*;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-
-public class RequestReception extends Thread {
-
+//Editor :Mohamad Mohyeddine and Ghina Saad
+/*
+the role of this class consist of receiving requests and hand them to a handler */
+public class RequestReception extends Thread
+{
     ServerSocket connectsink;
-    DataInputStream din ;
-    DataOutputStream dout;
-    int type;
-    String positionx;
-    String positiony;
-    Point position;
-    //coordonnee of point position
-    int x,y;
-    String idmin;
-    ArrayList<Descriptor> capteurs ;
-    Socket s;
-
-    public RequestReception(ServerSocket connectsink,Socket s) {
-        this.connectsink=connectsink;
-        this.s=s;
-    }
-    // this method return id of closest sensor
-    public String SearchIdSensor() throws IOException {
-        DataInputStream din = new DataInputStream(s.getInputStream()); // TODO Auto-generated catch block
-        String request="";
-        while((request=din.readUTF())!=null)
-        {
-            String tab[];
-            tab = request.split("-");
-
-            type=Integer.parseInt(tab[0]);
-            positionx=tab[1];
-            positiony=tab[2];
-            x=Integer.parseInt(positionx);
-            y=Integer.parseInt(positiony);
-            position.x=x;
-            position.y=y;
-            double distance_min=0;
-            // id for the closest sensor
-            idmin=null;
-            int i=0;
-            for ( Descriptor capteur :capteurs)
-            {
-                if(capteur.getType()==type)
-                {
-                    if(capteur.getCapacity()<capteur.getNbRequest())
-                    {
-                        String id=capteur.getId();
-                        double distance=distance(position,capteur.getPosition());
-                        //if the position in the sensor range
-                        if(distance<=capteur.getRange()) {
-
-                            if(i==0)
-                            {
-                                distance_min=distance;
-                                idmin=id;
-                            }
-                            else{
-                                if(distance< distance_min)
-                                {
-                                    distance_min=distance;
-                                    idmin=id;
-                                }
-                            }
-
-                        }
-                    }
-                }
-            }
-        }
-        return idmin;
-    }
-    //this method for send reponse
-    public void jfhjh(String idmin1) throws IOException {
-        DataOutputStream dout=new DataOutputStream(s.getOutputStream());
-        String reponse;
-
-        // if no sensor capable of serving
-        if(idmin1==null)
-            reponse="no sensor capable of serving you.";
-        else{
-            reponse="sensor="+idmin1;}
-        dout.writeUTF(reponse);
-        dout.flush();
-    }
-    public void run(){
-        while(true){
+    Socket socket;
+    public RequestReception()
+    { }
+    public void run()
+    {
+        while(true) {
             try {
-                 idmin=SearchIdSensor();
-                jfhjh(idmin);
+                socket = connectsink.accept();
+                Thread t=new RequestHandling(socket);
+                t.start();
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }
+
     }
-
-    //method calcul la distance
-    public double distance(Point a,Point b)
-    {
-        return Math.sqrt(Math.pow((a.getX() - b.getX()), 2) + Math.pow((a.getY() - b.getY()), 2));
-    }
-
-
-
 }
