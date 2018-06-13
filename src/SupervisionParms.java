@@ -2,9 +2,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 /*
 @Author Mohamad Mohyeddine
-    This class contains the pramaeters that to be used by all supervisor's tasks
+    This class contains the parameters that to be used by all supervisor's tasks
 
-    ISensor is an Interface extands Remote
+    ISensor is an Interface extends Remote
 */
 public class SupervisionParms
 {
@@ -16,6 +16,9 @@ public class SupervisionParms
 
     //Number of Request taken from Sink,may be considered the id of a request
     protected int nbSinkRequests;
+
+    //How many chances given to a sensor to update its descriptor
+    protected int nbChances;
 
     public SupervisionParms()
     {
@@ -82,5 +85,15 @@ public class SupervisionParms
         if(Descriptors.containsKey(descriptor.getId()))
             return;
         Descriptors.put(descriptor.getId(),descriptor);
+    }
+
+    //get number of chances
+    public int getNbChances() {
+        return nbChances;
+    }
+
+    //set number of chances (used in simulation)
+    public void setNbChances(int nbChances) {
+        this.nbChances = nbChances;
     }
 }
