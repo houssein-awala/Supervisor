@@ -6,6 +6,7 @@ public class RequestHandling extends Thread
 {
     ServerSocket connectsink;
     Socket socket;
+    SupervisionParms supervisionParms;
     public RequestHandling()
     { }
     public void run()
@@ -13,7 +14,7 @@ public class RequestHandling extends Thread
         while(true) {
             try {
           socket = connectsink.accept();
-            Thread t=new RequestReception(connectsink,socket);
+                Thread t=new RequestReception(connectsink,socket, supervisionParms);
             t.start();
             } catch (IOException e) {
                 e.printStackTrace();

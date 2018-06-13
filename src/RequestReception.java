@@ -1,8 +1,13 @@
+import com.sun.xml.internal.ws.util.QNameMap;
+
+import javax.swing.*;
 import java.awt.*;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RequestReception extends Thread {
 
@@ -16,12 +21,15 @@ public class RequestReception extends Thread {
     //coordonnee of point position
     int x,y;
     String idmin;
+    SupervisionParms supervisionParms;
     ArrayList<Descriptor> capteurs ;
     Socket s;
+    static int idRequest=0;
 
-    public RequestReception(ServerSocket connectsink,Socket s) {
+    public RequestReception(ServerSocket connectsink,Socket s,SupervisionParms supervisionParms) {
         this.connectsink=connectsink;
         this.s=s;
+       supervisionParms=new SupervisionParms();
     }
     // this method return id of closest sensor
     public String SearchIdSensor() throws IOException {
@@ -43,26 +51,28 @@ public class RequestReception extends Thread {
             // id for the closest sensor
             idmin=null;
             int i=0;
-            for ( Descriptor capteur :capteurs)
+            HashMap<String, Descriptor> Descriptors=supervisionParms.getDescriptors();
+
+            for (Map.Entry<String,Descriptor> entry :Descriptors.entrySet())
             {
-                if(capteur.getType()==type)
+                if(entry.getValue().getType()==type)
                 {
-                    if(capteur.getCapacity()<capteur.getNbRequest())
+                    if(entry.getValue().getCapacity()<entry.getValue().getNbRequest())
                     {
-                        String id=capteur.getId();
-                        double distance=distance(position,capteur.getPosition());
+                        String id=entry.getValue().getId();
+                        double distance=distance(position,entry.getValue().getPosition());
                         //if the position in the sensor range
-                        if(distance<=capteur.getRange()) {
+                        if(distance<=entry.getValue().getRange()) {
 
                             if(i==0)
                             {
-                                distance_min=distance;
+                                distance_min=distance+entry.getValue().getLastRequestServed();
                                 idmin=id;
                             }
                             else{
-                                if(distance< distance_min)
+                                if((distance+entry.getValue().getLastRequestServed())< distance_min)
                                 {
-                                    distance_min=distance;
+                                    distance_min=distance+entry.getValue().getLastRequestServed();
                                     idmin=id;
                                 }
                             }
@@ -71,19 +81,20 @@ public class RequestReception extends Thread {
                     }
                 }
             }
+            supervisionParms.getDescriptor(idmin).setLastRequestServed(idRequest);
         }
         return idmin;
     }
     //this method for send reponse
-    public void jfhjh(String idmin1) throws IOException {
+    public void jfhjh(String idSensormin1) throws IOException {
         DataOutputStream dout=new DataOutputStream(s.getOutputStream());
         String reponse;
 
         // if no sensor capable of serving
-        if(idmin1==null)
+        if(idSensormin1==null)
             reponse="no sensor capable of serving you.";
         else{
-            reponse="sensor="+idmin1;}
+            reponse="sensor="+idSensormin1;}
         dout.writeUTF(reponse);
         dout.flush();
     }
@@ -91,6 +102,7 @@ public class RequestReception extends Thread {
         while(true){
             try {
                  idmin=SearchIdSensor();
+                 idRequest++;
                 jfhjh(idmin);
             } catch (IOException e) {
                 // TODO Auto-generated catch block
