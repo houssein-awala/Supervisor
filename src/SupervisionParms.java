@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 /*
+@Author Mohamad Mohyeddine
     This class contains the pramaeters that to be used by all supervisor's tasks
 
     ISensor is an Interface extands Remote
@@ -13,7 +14,26 @@ public class SupervisionParms
     //hashmap contains descriptors of all sensors to use regularly
     protected HashMap<String,Descriptor> Descriptors;
 
+    //Number of Request taken from Sink,may be considered the id of a request
+    protected int nbSinkRequests;
 
+    public SupervisionParms()
+    {
+        Sensors=new HashMap<>();
+        Descriptors=new HashMap<>();
+        nbSinkRequests=0;
+    }
+
+
+    public void IncNbRequest()
+    {
+        nbSinkRequests++;
+    }
+
+    public void DecNbRequest()
+    {
+        nbSinkRequests--;
+    }
 
     // Getters and setters
     public HashMap<String, Descriptor> getDescriptors() {
