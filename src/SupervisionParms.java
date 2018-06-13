@@ -20,11 +20,12 @@ public class SupervisionParms
     //How many chances given to a sensor to update its descriptor
     protected int nbChances;
 
-    public SupervisionParms()
+    public SupervisionParms(int nbChances)
     {
         Sensors=new HashMap<>();
         Descriptors=new HashMap<>();
         nbSinkRequests=0;
+        this.nbChances=nbChances;
     }
 
 
