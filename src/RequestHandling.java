@@ -12,49 +12,49 @@ import java.util.Map;
 public class RequestHandling extends Thread {
 
 
-    DataInputStream din ;
+    private BufferedReader din ;
     DataOutputStream dout;
-    int type;
-    int positionx,positiony;  //coordonnee of point position
-    Point position;
-    Double calcul;
-    String idSensor;
-    SupervisionParms supervisionParms;
-    Socket socket;
-    static int idRequest=0;
+    private int type;
+    private Point position;
+    private Double calcul;
+    private String idSensor;
+    private SupervisionParms supervisionParms;
+    private Socket socket;
+    private static int idRequest=0;
 
-    public RequestHandling(Socket socket) {
+    public RequestHandling(Socket socket,SupervisionParms supervisionParms) {
+
         this.socket=socket;
+        this.supervisionParms=supervisionParms;
     }
+
+
     // this method return id of closest sensor
     public String getIdSensor() throws IOException {
-        din = new DataInputStream(socket.getInputStream()); // TODO Auto-generated catch block
-        String request="";
-        while((request=din.readUTF())!=null)
-        {
-            //read request and split with separator
-            readLine(request);
-            supervisionParms=new SupervisionParms();
+
+            //read String request
+            readLine();
             idSensor=null;// id for the closest sensor
 
             //method search sensor suitable for request
             SearchSensor();
             //gives the request an id
            givesIdRequest(idSensor,idRequest);
-        }
         return idSensor;
     }
+
     //this method for read line
-    public void readLine(String line)
-    {
+    public void readLine() throws IOException {
+        din = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        String request="";
+        request=din.readLine();
         String tab[];
-        tab = line.split("-");
+        tab = request.split("-");
         type=Integer.parseInt(tab[0]);
-        positionx=Integer.parseInt(tab[1]);
-        positiony=Integer.parseInt(tab[2]);
-        position.x=positionx;
-        position.y=positiony;
+        position.x=Integer.parseInt(tab[1]);
+        position.y=Integer.parseInt(tab[2]);
     }
+
     //this method search sensor suitable for request
     private void SearchSensor() {
         int i=0;
@@ -93,13 +93,13 @@ public class RequestHandling extends Thread {
     }
 
     // this method gives for each request id
-    public void givesIdRequest(String idSensor,int idRequest)
+    private void givesIdRequest(String idSensor, int idRequest)
     {
         supervisionParms.getDescriptor(idSensor).setLastRequestServed(idRequest);
     }
 
     //this method for send reponse
-    public void SendReponse(String idSensor) throws IOException {
+    private void SendReponse(String idSensor) throws IOException {
         DataOutputStream dout=new DataOutputStream(socket.getOutputStream());
         String reponse;
 
@@ -116,20 +116,17 @@ public class RequestHandling extends Thread {
     //end method SendReponse
 
     public void run(){
-        while(true){
             try {
                  idSensor=getIdSensor();
                  idRequest++;
                 SendReponse(idSensor);
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-        }
     }
 
     //method calcul la distance
-    public double distance(Point a,Point b)
+    private double distance(Point a, Point b)
     {
         return Math.sqrt(Math.pow((a.getX() - b.getX()), 2) + Math.pow((a.getY() - b.getY()), 2));
     }

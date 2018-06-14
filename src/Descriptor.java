@@ -35,6 +35,7 @@ public class Descriptor implements Serializable {
     public static final int SPEED=4;
     public static final int DIRECTION=5;
 
+    public static final int DescriptorUpdateFrequency=5;
     //the service of sensor
     protected int service;
 
