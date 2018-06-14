@@ -8,7 +8,9 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
+/*
+@Author Ghina Saad
+ */
 public class RequestHandling extends Thread {
 
 
