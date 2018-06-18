@@ -87,7 +87,7 @@ public class RequestHandling extends Thread //By Mohamad Mohyeddine
                 }
             }
         }
-        return sensorId;
+        return "RequestID:"+requestId+"/Sensor:"+sensorId;
     }
 
     //send the sink the id of the selected sensor

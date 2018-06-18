@@ -16,6 +16,7 @@ public class DescriptorReceiver extends Thread
     DatagramSocket receiver;
     DatagramPacket packet;
     byte[] data;
+    boolean running;
 
     //Constructor
     public DescriptorReceiver(SupervisionParms parms) throws SocketException {
@@ -24,9 +25,15 @@ public class DescriptorReceiver extends Thread
         data=new byte[1024*10];
     }
 
+    public synchronized boolean isRunning(Boolean state) {
+        if(state!=null)
+            running=state;
+        return state;
+    }
+
     //Start Receiving packets
     private void StartReception() throws IOException {
-        while (true)
+        while (isRunning(null))
         {
             packet=new DatagramPacket(data,data.length);
             receiver.receive(packet);

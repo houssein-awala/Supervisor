@@ -2,7 +2,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 /*
-@Author Ghina Saad
+@Author Ghina Saad/Mohamad Mohyeddine
 
 This Thread receives connections from the sink and start a RequestHandling thread to deal with them
 */
@@ -12,9 +12,17 @@ public class RequestReception extends Thread
     private Socket socket;
     private SupervisionParms supervisionParms;
     private final int portNb = 8888;
+    private boolean running;
 
     public RequestReception(SupervisionParms supervisionParms) {
         this.supervisionParms = supervisionParms;
+    }
+
+    public synchronized boolean isRunning(Boolean state) //By Mohamad Mohyeddine
+     {
+        if(state!=null)
+            running=state;
+        return state;
     }
 
     public void run()
@@ -24,7 +32,7 @@ public class RequestReception extends Thread
         } catch (IOException e) {
             e.printStackTrace();
         }
-        while(true) {
+        while(isRunning(null)) {
             try {
           socket = connectsink.accept();
                 Thread t=new RequestHandling(supervisionParms,socket);
