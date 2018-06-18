@@ -1,138 +1,107 @@
-import com.sun.xml.internal.ws.util.QNameMap;
-
-import javax.swing.*;
 import java.awt.*;
 import java.io.*;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
+
 /*
-@Author Ghina Saad
+@Author Mohamad Mohyeddine/Ghina Saad
+
+this Thread handle a request coming from the sink and return to it the id of a sensor that can execute this
+
+request according to different parameters and criteria while ensuring minimum load balancing and then distance
+
+optimization
  */
-public class RequestHandling extends Thread {
+public class RequestHandling extends Thread //By Mohamad Mohyeddine
+{
+    private BufferedReader reader;
 
+    private BufferedWriter writer;
 
-    private BufferedReader din ;
-    DataOutputStream dout;
-    private int type;
+    private SupervisionParms parms;
+
     private Point position;
-    private Double calcul;
-    private String idSensor;
-    private SupervisionParms supervisionParms;
-    private Socket socket;
-    private static int idRequest=0;
 
-    public RequestHandling(Socket socket,SupervisionParms supervisionParms) {
+    private int type;
 
-        this.socket=socket;
-        this.supervisionParms=supervisionParms;
+    private int requestId;
+
+    private Socket request;
+
+    public RequestHandling(SupervisionParms parms, Socket request) { //By Mohamad Mohyeddine
+
+        this.parms = parms;
+        this.request = request;
+        position=new Point();
     }
 
+    @Override
+    public void run() //By Mohamad Mohyeddine
 
-    // this method return id of closest sensor
-    public String getIdSensor() throws IOException {
-
-            //read String request
-            readLine();
-            idSensor=null;// id for the closest sensor
-
-            //method search sensor suitable for request
-            SearchSensor();
-            //gives the request an id
-           givesIdRequest(idSensor,idRequest);
-        return idSensor;
+    {
+        try {
+            iniRequest();
+            sendResponse(AssignSensor());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    //this method for read line
-    public void readLine() throws IOException {
-        din = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        String request="";
-        request=din.readLine();
-        String tab[];
-        tab = request.split("-");
+    //methode to read the request string and extract the necessary parameters
+    private void iniRequest() throws Exception //By Mohamad Mohyeddine
+
+    {
+        reader=new BufferedReader(new InputStreamReader(request.getInputStream()));
+        String statment =reader.readLine();
+        String tab[]=statment.split("-");
         type=Integer.parseInt(tab[0]);
         position.x=Integer.parseInt(tab[1]);
         position.y=Integer.parseInt(tab[2]);
+        requestId=parms.newSinkRequest();
+        reader.close();
     }
 
-    //this method search sensor suitable for request
-    private void SearchSensor() {
-        int i=0;
-        double distance_min=0;
-        HashMap<String, Descriptor> Descriptors=supervisionParms.getDescriptors();
-        for (Map.Entry<String,Descriptor> entry :Descriptors.entrySet())
+    //search the best sensor to execute the request
+    private String AssignSensor() //By Mohamad Mohyeddine
+
+    {
+        String sensorId="";
+        int minSinkRequest=Integer.MAX_VALUE;
+        double minDistance=Double.MAX_VALUE;
+
+        for (Map.Entry<String,Descriptor> entry :parms.getDescriptors().entrySet())
         {
-          //  if he is the same type
-            if(entry.getValue().getType()==type)
+            if(entry.getValue().getType()==type&&entry.getValue().getCapacity()>entry.getValue().getNbRequest())
             {
-                //if the capacity is not full
-                if(entry.getValue().getCapacity()<entry.getValue().getNbRequest())
+                double distanceWithRequest =distance(position,entry.getValue().getPosition());
+                if(distanceWithRequest<=entry.getValue().getRange())
                 {
-                    String id=entry.getValue().getId();
-                    double distance=distance(position,entry.getValue().getPosition());
-                    //if the position in the sensor range
-                    if(distance<=entry.getValue().getRange()) {
-                        calcul=distance+entry.getValue().getLastRequestServed();
-                        if(i==0)
-                        {
-                            distance_min=calcul;
-                            idSensor=id;
-                        }
-                        else{
-                            if(calcul< distance_min)
-                            {
-                                distance_min=calcul;
-                                idSensor=id;
-                            }
-                        }
-                        i++;
+                    int lastReaquest=entry.getValue().getLastRequestServed();
+                    double distanceWithSink =distance(new Point(0,0),entry.getValue().getPosition());
+                    if((lastReaquest<minSinkRequest)||(lastReaquest==minSinkRequest&&distanceWithSink<minDistance))
+                    {
+                        minSinkRequest=lastReaquest;
+                        minDistance=distanceWithSink;
+                        sensorId=entry.getKey();
                     }
                 }
             }
         }
+        return sensorId;
     }
 
-    // this method gives for each request id
-    private void givesIdRequest(String idSensor, int idRequest)
-    {
-        supervisionParms.getDescriptor(idSensor).setLastRequestServed(idRequest);
+    //send the sink the id of the selected sensor
+    private void sendResponse(String id) throws IOException { //By Mohamad Mohyeddine
+
+        writer=new BufferedWriter(new OutputStreamWriter(request.getOutputStream()));
+        writer.write(id);
+        writer.flush();
+        writer.close();
     }
 
-    //this method for send reponse
-    private void SendReponse(String idSensor) throws IOException {
-        DataOutputStream dout=new DataOutputStream(socket.getOutputStream());
-        String reponse;
+    private double distance(Point a, Point b) //By Ghina Saad
 
-        // if no sensor capable of serving
-        if(idSensor==null)
-            reponse="no sensor capable of serving you.";
-        else{
-            reponse="sensor="+idSensor;
-        }
-        dout.writeUTF(reponse);
-        dout.flush();
-        dout.close();
-    }
-    //end method SendReponse
-
-    public void run(){
-            try {
-                 idSensor=getIdSensor();
-                 idRequest++;
-                SendReponse(idSensor);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-    }
-
-    //method calcul la distance
-    private double distance(Point a, Point b)
     {
         return Math.sqrt(Math.pow((a.getX() - b.getX()), 2) + Math.pow((a.getY() - b.getY()), 2));
     }
-
-
-
 }

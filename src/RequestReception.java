@@ -3,6 +3,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 /*
 @Author Ghina Saad
+
+This Thread receives connections from the sink and start a RequestHandling thread to deal with them
 */
 public class RequestReception extends Thread
 {
@@ -25,7 +27,7 @@ public class RequestReception extends Thread
         while(true) {
             try {
           socket = connectsink.accept();
-                Thread t=new RequestHandling(socket,supervisionParms);
+                Thread t=new RequestHandling(supervisionParms,socket);
             t.start();
             } catch (IOException e) {
                 e.printStackTrace();

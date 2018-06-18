@@ -48,6 +48,12 @@ public class SupervisionParms
        synchronized (reqlock){return nbSinkRequests;}
     }
 
+    //this method combine IncNbRequest and getNbRequest
+    public int newSinkRequest(){
+
+            synchronized (reqlock){return ++nbSinkRequests;}
+    }
+
     // Getters and setters
     public HashMap<String, Descriptor> getDescriptors() {
         synchronized (deslock){return Descriptors;}
