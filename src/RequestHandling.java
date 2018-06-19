@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.io.*;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.Map;
 
 /*
@@ -66,9 +67,12 @@ public class RequestHandling extends Thread //By Mohamad Mohyeddine
 
     {
         String sensorId="";
-        int minSinkRequest=Integer.MAX_VALUE;
-        double minDistance=Double.MAX_VALUE;
+        double max_proba=0;
+        double maxDistance=0;
+        HashMap<String,Double> distances=new HashMap<>();
+        HashMap<String,Double> finaleValue=new HashMap<>();
 
+        //loop to calculate distances and find the max one
         for (Map.Entry<String,Descriptor> entry :parms.getDescriptors().entrySet())
         {
             if(entry.getValue().getType()==type&&entry.getValue().getCapacity()>entry.getValue().getNbRequest())
@@ -76,15 +80,22 @@ public class RequestHandling extends Thread //By Mohamad Mohyeddine
                 double distanceWithRequest =distance(position,entry.getValue().getPosition());
                 if(distanceWithRequest<=entry.getValue().getRange())
                 {
-                    int lastReaquest=entry.getValue().getLastRequestServed();
-                    double distanceWithSink =distance(new Point(0,0),entry.getValue().getPosition());
-                    if((lastReaquest<minSinkRequest)||(lastReaquest==minSinkRequest&&distanceWithSink<minDistance))
-                    {
-                        minSinkRequest=lastReaquest;
-                        minDistance=distanceWithSink;
-                        sensorId=entry.getKey();
-                    }
+                    distances.put(entry.getKey(),distanceWithRequest);
+                    if(distanceWithRequest>maxDistance)
+                        maxDistance=distanceWithRequest;
+                    double temp=(1-(entry.getValue().getNbRequest()/entry.getValue().getCapacity()))*0.2+(1-(entry.getValue().getLastRequestServed()/(requestId-1)))*0.4;
+                    finaleValue.put(entry.getKey(),temp);
                 }
+            }
+        }
+        //decide the suitable sensor
+        for(Map.Entry<String,Double> entry:distances.entrySet())
+        {
+            double temp=((1-(entry.getValue()/maxDistance))*0.4)+finaleValue.get(entry.getKey());
+            if(temp>max_proba)
+            {
+                max_proba=temp;
+                sensorId=entry.getKey();
             }
         }
         return "RequestID:"+requestId+"/Sensor:"+sensorId;
