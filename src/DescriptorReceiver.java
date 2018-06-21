@@ -21,7 +21,7 @@ public class DescriptorReceiver extends Thread
     //Constructor
     public DescriptorReceiver(SupervisionParms parms) throws SocketException {
         this.parms = parms;
-        receiver=new DatagramSocket(1111);
+        receiver=new DatagramSocket(1112);
         data=new byte[1024*10];
     }
 
