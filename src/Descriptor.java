@@ -1,6 +1,3 @@
-import jdk.nashorn.internal.ir.RuntimeNode;
-import sun.misc.Request;
-
 import java.awt.*;
 import java.io.Serializable;
 
@@ -35,7 +32,6 @@ public class Descriptor implements Serializable {
     public static final int SPEED=4;
     public static final int DIRECTION=5;
 
-    public static final int DescriptorUpdateFrequency=5;
     //the service of sensor
     protected int service;
 
@@ -64,13 +60,13 @@ public class Descriptor implements Serializable {
     //the id of the last request served by the sensor having this descriptor
     protected int lastRequestServed;
 
-
-    public Descriptor(int type, int service, int capacity, double range, Request request) {
+    public Descriptor(int type, Point position, int service, int capacity, double range, Request request) {
         this.type = type;
         this.service = service;
         this.capacity = capacity;
         this.range = range;
         this.request = request;
+        this.position=position;
 
         this.state=NEW;
     }
@@ -170,12 +166,11 @@ public class Descriptor implements Serializable {
     public void decNbRoutedRequest(){
         nbRoutedRequest--;
     }
-    public void setLastRequestServed(int lastRequestServed)
-    {
-        this.lastRequestServed=lastRequestServed;
-    }
-    public int getLastRequestServed()
-    {
+
+    public int getLastRequestServed() {
         return lastRequestServed;
     }
-}
+
+    public void setLastRequestServed(int lastRequestServed) {
+        this.lastRequestServed = lastRequestServed;
+    }

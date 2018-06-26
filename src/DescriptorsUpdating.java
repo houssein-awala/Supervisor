@@ -53,7 +53,7 @@ public class DescriptorsUpdating extends Thread
     private void setTimer()
     {
         if(!parms.isTimerExist(id))
-            parms.addTimer(id,new Timer(id,parms.getNbChances(),Descriptor.DescriptorUpdateFrequency,parms));
+            parms.addTimer(id,new Timer(id,parms.getNbChances(),5,parms));
         else
         {
             parms.getTimer(id).ResetTics(parms.getNbChances());
