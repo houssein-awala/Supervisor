@@ -154,13 +154,13 @@ public class Interface extends DefaultTableModel {
                                 ee.getMessage();
                             }
                         */
-                /*
+                //hon fi 5ata2 bnsbe ll value changed
                 if(row != -1) {
                     System.out.println("hellooooo"+row);
-             //       int modelIndex = jt.convertRowIndexToModel(row); // converts the row index in the view to the appropriate index in the model
+                    //       int modelIndex = jt.convertRowIndexToModel(row); // converts the row index in the view to the appropriate index in the model
                     DefaultTableModel model = (DefaultTableModel)jt.getModel();
                     model.removeRow(row);
-                }*/
+                }
 
                 // }
 
@@ -436,6 +436,10 @@ public class Interface extends DefaultTableModel {
             }
         }
 
+    }
+    public static void main(String[] args) {
+
+        new Interface();
     }
 }
 

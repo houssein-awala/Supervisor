@@ -1,3 +1,5 @@
+import sun.misc.Request;
+
 import java.awt.*;
 import java.io.Serializable;
 
@@ -119,7 +121,7 @@ public class Descriptor implements Serializable {
         this.position = position;
     }
 
-    public Request getRequest() {
+   public Request getRequest() {
         return request;
     }
 
@@ -174,3 +176,4 @@ public class Descriptor implements Serializable {
     public void setLastRequestServed(int lastRequestServed) {
         this.lastRequestServed = lastRequestServed;
     }
+}
