@@ -6,6 +6,11 @@ this thread is a timer that reset every time a datagram packet is received
 and will make sure that when the time is out ,inform the sensor manager to deal with this sensor
  */
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.net.UnknownHostException;
+
 public class Timer extends Thread
 {
     //tics represents the chances that the sensor have before been considered down
@@ -56,6 +61,18 @@ public class Timer extends Thread
             }
         }
         parms.getDescriptor(id).setState(Descriptor.ERROR);
+        try {
+
+            Socket socket = new Socket("localhost", 9999);
+            PrintWriter writer=new PrintWriter(socket.getOutputStream());
+            writer.print(id);
+            socket.close();
+        }
+        catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         parms.deleteTimer(id);
     }
 }

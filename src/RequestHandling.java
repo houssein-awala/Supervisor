@@ -15,25 +15,22 @@ optimization
  */
 public class RequestHandling extends Thread //By Mohamad Mohyeddine
 {
-    private BufferedReader reader;
+    private ObjectInputStream objectInputStream;
 
-    private BufferedWriter writer;
+    private ObjectOutputStream objectOutputStream;
 
     private SupervisionParms parms;
 
-    private Point position;
-
-    private int type;
-
     private int requestId;
 
-    private Socket request;
+    private Socket socket;
 
-    public RequestHandling(SupervisionParms parms, Socket request) { //By Mohamad Mohyeddine
+    private SinkRequest request;
+
+    public RequestHandling(SupervisionParms parms, Socket socket) { //By Mohamad Mohyeddine
 
         this.parms = parms;
-        this.request = request;
-        position=new Point();
+        this.socket = socket;
     }
 
     @Override
@@ -42,28 +39,26 @@ public class RequestHandling extends Thread //By Mohamad Mohyeddine
     {
         try {
             iniRequest();
-            sendResponse(AssignSensor());
+            AssignSensor();
+            sendResponse();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    //methode to read the request string and extract the necessary parameters
+    //method to read the request string and extract the necessary parameters
     private void iniRequest() throws Exception //By Mohamad Mohyeddine
 
     {
-        reader=new BufferedReader(new InputStreamReader(request.getInputStream()));
-        String statment =reader.readLine();
-        String tab[]=statment.split("-");
-        type=Integer.parseInt(tab[0]);
-        position.x=Integer.parseInt(tab[1]);
-        position.y=Integer.parseInt(tab[2]);
+        objectInputStream=new ObjectInputStream(socket.getInputStream());
+        request=(SinkRequest)objectInputStream.readObject();
         requestId=parms.newSinkRequest();
-        reader.close();
+        request.setRequestID(requestId);
+        objectInputStream.close();
     }
 
     //search the best sensor to execute the request
-    private String AssignSensor() //By Mohamad Mohyeddine
+    private void AssignSensor() //By Mohamad Mohyeddine
 
     {
         String sensorId="";
@@ -71,13 +66,14 @@ public class RequestHandling extends Thread //By Mohamad Mohyeddine
         double maxDistance=0;
         HashMap<String,Double> distances=new HashMap<>();
         HashMap<String,Double> finaleValue=new HashMap<>();
-
+        if(request.getState()==SinkRequest.ERROR)
+            request.addCurrentToSensors();
         //loop to calculate distances and find the max one
         for (Map.Entry<String,Descriptor> entry :parms.getDescriptors().entrySet())
         {
-            if(entry.getValue().getType()==type&&entry.getValue().getCapacity()>entry.getValue().getNbRequest())
+            if(!request.isUnReached(entry.getKey())&&entry.getValue().getType()==request.getTypeOfService()&&entry.getValue().getCapacity()>entry.getValue().getNbRequest())
             {
-                double distanceWithRequest =distance(position,entry.getValue().getPosition());
+                double distanceWithRequest =distance(request.getPosition(),entry.getValue().getPosition());
                 if(distanceWithRequest<=entry.getValue().getRange())
                 {
                     distances.put(entry.getKey(),distanceWithRequest);
@@ -98,16 +94,15 @@ public class RequestHandling extends Thread //By Mohamad Mohyeddine
                 sensorId=entry.getKey();
             }
         }
-        return "RequestID:"+requestId+"/Sensor:"+sensorId;
+        request.setSelectedSensor(sensorId);
     }
 
     //send the sink the id of the selected sensor
-    private void sendResponse(String id) throws IOException { //By Mohamad Mohyeddine
+    private void sendResponse() throws IOException { //By Mohamad Mohyeddine
 
-        writer=new BufferedWriter(new OutputStreamWriter(request.getOutputStream()));
-        writer.write(id);
-        writer.flush();
-        writer.close();
+        objectOutputStream=new ObjectOutputStream(socket.getOutputStream());
+        objectOutputStream.writeObject(request);
+        objectOutputStream.close();
     }
 
     private double distance(Point a, Point b) //By Ghina Saad
