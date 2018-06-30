@@ -24,7 +24,7 @@ public class Interface extends DefaultTableModel {
 
     // HashMap<String,Descriptor> Descriptors=supervisionParms.getDescriptors();
     private ISensor sensor;
-    private SupervisionParms parms;
+    private SupervisionParms parms=new SupervisionParms() ;
     private JTable jt;
     private DefaultTableModel model;
     private String data[][];
@@ -36,7 +36,7 @@ public class Interface extends DefaultTableModel {
     JButton jbt4 = new JButton("RequestSink");
     JButton jbt5 = new JButton("Execute File");
     static int row;
-    String id;
+    String id=null;
     int typee,positionX,positionY,state,capacity,range,nbrequest,service;
     Point position;
     Interface() {
@@ -145,13 +145,15 @@ public class Interface extends DefaultTableModel {
                 // get the selected row index
                 int selectedRowIndex = jt.getSelectedRow();
                 row=selectedRowIndex;
-                String TypeSensor[]={"Base","Router"};
-                id= model.getValueAt(selectedRowIndex, 0).toString();
-               typee= Integer.parseInt(model.getValueAt(selectedRowIndex, 1).toString());
-                positionX= Integer.parseInt(model.getValueAt(selectedRowIndex, 8).toString());
-                positionY= Integer.parseInt(model.getValueAt(selectedRowIndex, 9).toString());
-                position.x=positionX;
-                position.y=positionY;
+                if(row!=-1) {
+                    String TypeSensor[] = {"Base", "Router"};
+                    id = model.getValueAt(selectedRowIndex, 0).toString();
+                    typee = Integer.parseInt(model.getValueAt(selectedRowIndex, 1).toString());
+                    positionX = Integer.parseInt(model.getValueAt(selectedRowIndex, 8).toString());
+                    positionY = Integer.parseInt(model.getValueAt(selectedRowIndex, 9).toString());
+                    position.x = positionX;
+                    position.y = positionY;
+                }
                 JTextField typeet=new JTextField(typee);
                 typeet.setBounds(80,0,200,20);
                 d.add(typeet);
