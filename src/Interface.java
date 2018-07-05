@@ -2,14 +2,16 @@ import com.sun.org.apache.xml.internal.utils.SystemIDResolver;
 
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.swing.filechooser.FileSystemView;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.net.MalformedURLException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.table.*;
@@ -21,13 +23,12 @@ import javax.swing.table.DefaultTableModel;
 public class Interface extends DefaultTableModel {
 
 
-
-    // HashMap<String,Descriptor> Descriptors=supervisionParms.getDescriptors();
     private ISensor sensor;
+    private IFactory factory;
     private SupervisionParms parms=new SupervisionParms() ;
     private JTable jt;
     private DefaultTableModel model;
-    private String data[][];
+    private String[][] data;
     private String [] column={"ID", "TYPE","CAPACITY","STATE","NBREQUEST","REQUEST","RANGE","SERVICE","POSITIONx","POSITIONy"};
     JFrame f;
     JButton jbt1 = new JButton("AddSensor");
@@ -35,22 +36,26 @@ public class Interface extends DefaultTableModel {
     JButton jbt3 = new JButton("Delette");
     JButton jbt4 = new JButton("RequestSink");
     JButton jbt5 = new JButton("Execute File");
+    JTextField typet;
+    JTextField positiontx;
+    JTextField positionty;
+    JTextField statet;
     static int row;
-    String id=null;
-    int typee,positionX,positionY,state,capacity,range,nbrequest,service;
+    String id=null,Typesensor;
+    int typee,positionX,positionY,State,Capacity,Nbrequest,Service;
+    Double Range;
     Point position;
     Interface() {
 
 
         f = new JFrame("simulation");
 
-     //   String data[][] = {{"12","6567","667","566","657","","","","332","434"},{"13","","","","","","","","",""}};
-        data=remplir_table();
+         data = new String[][]{{"12", "6567", "667", "566", "657", "56", "33", "22", "332", "434"}, {"13", "", "", "", "", "", "", "", "", ""}};
         JPanel panel=new JPanel();
         JPanel p1=new JPanel();
 
 
-       // column = {"ID", "TYPE","CAPACITY","STATE","NBREQUEST","REQUEST","RANGE","SERVICE","POSITIONx","POSITIONy"};
+
         model = new DefaultTableModel(data, column);
         jt = new JTable( model );
 
@@ -95,34 +100,8 @@ public class Interface extends DefaultTableModel {
             }
         };
 
-        //action for delete sensor
-        ActionListener delete=new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                jt.setCellSelectionEnabled(true);
-                DefaultTableModel model=   (DefaultTableModel) jt.getModel() ;
-                String Data = null;
-                int[] row = jt.getSelectedRows();
-                int[] columns = jt.getSelectedColumns();
-                for (int i = 0; i < row.length; i++) {
-                    Data = (String) jt.getValueAt(row[i],0);
-                    if(Data==id)
-                    {
-                        System.out.println("Table element selected is: " + Data);
-                        jt.remove(i);
-                        model.removeRow(i);
-//                        jt.getSelectionModel().clearSelection();
-                    }
-                }
-                sensor.deleteSensor(id);
-            }
-        };
-        ActionListener ActionEditensor=new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                sensor.editSensor(id,typee,position);
-            }
-        };
+
+
         // action pour edit sensor
         ActionListener editSensor=new ActionListener() {
             @Override
@@ -141,59 +120,82 @@ public class Interface extends DefaultTableModel {
                 positiony.setBounds(0,40,80,20);
                 d.add(positionx);
                 d.add(positiony);
+                JLabel state=new JLabel("state:");
+                state.setBounds(0,60,80,20);
+                d.add(state);
                 DefaultTableModel model = (DefaultTableModel)jt.getModel();
                 // get the selected row index
                 int selectedRowIndex = jt.getSelectedRow();
                 row=selectedRowIndex;
+                String t = null;
+                String x=null;
+                String y=null;
+                String s=null;
                 if(row!=-1) {
+                    System.out.println("hiiiiiiii");
                     String TypeSensor[] = {"Base", "Router"};
                     id = model.getValueAt(selectedRowIndex, 0).toString();
-                    typee = Integer.parseInt(model.getValueAt(selectedRowIndex, 1).toString());
-                    positionX = Integer.parseInt(model.getValueAt(selectedRowIndex, 8).toString());
-                    positionY = Integer.parseInt(model.getValueAt(selectedRowIndex, 9).toString());
-                    position.x = positionX;
-                    position.y = positionY;
+                     t= (model.getValueAt(selectedRowIndex, 1).toString());
+                     x = (model.getValueAt(selectedRowIndex, 8).toString());
+                     y = (model.getValueAt(selectedRowIndex, 9).toString());
+                     s=(model.getValueAt(selectedRowIndex,3).toString());
                 }
-                JTextField typeet=new JTextField(typee);
-                typeet.setBounds(80,0,200,20);
-                d.add(typeet);
-                JTextField positiontx=new JTextField(positionX);
+               JTextField typett=new JTextField(t);
+                typett.setBounds(80,0,200,20);
+                d.add(typett);
+               positiontx=new JTextField(x);
                 positiontx.setBounds(80,20,200,20);
                 d.add(positiontx);
-                JTextField positionty=new JTextField(positionY);
+                positionty=new JTextField(y);
                 positionty.setBounds(80,40,200,20);
                 d.add(positionty);
+                statet=new JTextField(s);
+                statet.setBounds(80,60,200,20);
+                d.add(statet);
                 JButton buttonedit =new JButton("edit");
                 buttonedit.setBounds(0,200,60,23);
                 d.add(buttonedit);
                 JButton b1=new JButton("cancel");
                 b1.setBounds(70,200,80,23);
                 d.add(b1);
-                //action on the button edit
-                buttonedit.addActionListener(ActionEditensor);
+                buttonedit.addActionListener( new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                typee=Integer.parseInt(typett.getText().toString());
+                positionX=Integer.parseInt(positiontx.getText().toString());
+                positionY=Integer.parseInt(positionty.getText().toString());
+                State=Integer.parseInt(statet.getText().toString());
+                position=new Point(positionX,positionY);
+                        System.out.println(typee  );
+                        System.out.println(positionX);
+                        f1.setVisible(false);
+                        sensor.editSensor(id,typee,position,State);
 
+                       d.setVisible(false);
+
+                    }
+                });
                 d.setVisible(true);
+
+
             }
         };
-        // action pour ouvrir un fenetre supprimer
+        // action for delete sensor
         ActionListener printAction = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 if(row != -1) {
+                    id= (String) jt.getValueAt(row,0);
                     System.out.println("hellooooo"+row);
                     DefaultTableModel model = (DefaultTableModel)jt.getModel();
                     model.removeRow(row);
+
                 }
-
+                sensor.deleteSensor(id);
+                data=fill_table();
+                 updateTable(data,jt,column,model);
             }
         };
-        // action pour ajouter un sensor
-        ActionListener ActionAddSensor=new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
 
-                //    AddSensor();
-            }
-        };
         //action quand on clique sur add sensor
         ActionListener printAction1 = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -201,49 +203,48 @@ public class Interface extends DefaultTableModel {
 
                 JDialog d=new JDialog(f1,"Add sensor",true);
                 d.setSize(400,400);
-                JLabel type=new JLabel("type:");
-                type.setBounds(0,0,80,20);
+
                 d.setLayout(null);
-                d.add(type);
                 JLabel service=new JLabel("service:");
                 service.setBounds(0,20,80,20);
-                JLabel capacity=new JLabel("capacity:");
+                JLabel capacity = new JLabel("capacity:");
                 capacity.setBounds(0,40,80,20);
 
-                JLabel range=new JLabel("range:");
+                JLabel range = new JLabel("range:");
                 range.setBounds(0,60,80,20);
-                JLabel position=new JLabel("position:");
-                position.setBounds(0,80,80,20);
-
+                JLabel positionx=new JLabel("positionx:");
+                positionx.setBounds(0,80,80,20);
+                JLabel positiony=new JLabel("positiony:");
+                positiony.setBounds(0,120,80,20);
 
                 JLabel typesensor=new JLabel("typeSensor:");
                 typesensor.setBounds(0,100,80,20);
                 d.add(service);
                 d.add(capacity);
                 d.add(range);
-                d.add(position);
+                d.add(positionx);
+                d.add(positiony);
                 d.add(typesensor);
 
                 String TypeSensor[]={"Base","Router"};
                 JComboBox comboBox =new JComboBox(TypeSensor);
                 comboBox.setBounds(80,100,200,20);
                 d.add(comboBox);
-                JTextField typet=new JTextField();
-                typet.setBounds(80,0,200,20);
-                d.add(typet);
                 JTextField servicet=new JTextField();
                 servicet.setBounds(80,20,200,20);
                 d.add(servicet);
                 JTextField capacityt=new JTextField();
                 capacityt.setBounds(80,40,200,20);
                 d.add(capacityt);
-
                 JTextField ranget=new JTextField();
                 ranget.setBounds(80,60,200,20);
                 d.add(ranget);
-                JTextField positiont=new JTextField();
-                positiont.setBounds(80,80,200,20);
-                d.add(positiont);
+                JTextField positiontx=new JTextField();
+                positiontx.setBounds(80,80,200,20);
+                d.add(positiontx);
+                JTextField positionty=new JTextField();
+                positionty.setBounds(80,120,200,20);
+                d.add(positionty);
                 JButton buttonadd =new JButton("add");
                 buttonadd.setBounds(0,200,60,23);
                 d.add(buttonadd);
@@ -251,50 +252,85 @@ public class Interface extends DefaultTableModel {
                 b1.setBounds(70,200,80,23);
                 d.add(b1);
                 //action on the button add
-                buttonadd.addActionListener(ActionAddSensor);
+                buttonadd.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+
+                        Range= Double.valueOf((ranget.getText().toString()));
+                        Capacity=Integer.parseInt(capacityt.getText().toString());
+                        Service=Integer.parseInt(servicet.getText().toString());
+                        positionX=Integer.parseInt(positiontx.getText().toString());
+                        positionY=Integer.parseInt(positionty.getText().toString());
+                        position=new Point(positionX,positionY);
+                        Typesensor=comboBox.getSelectedItem().toString();
+                        int type_sensor;
+                        if(Typesensor=="Base")
+                        {
+                             type_sensor=1;
+                        }
+                        else{
+                             type_sensor=2;
+                        }
+                        System.out.println(typee);
+                        try {
+                            factory=(IFactory) Naming.lookup("rmi://127.0.0.1:1199/Cal");
+                        } catch (NotBoundException e1) {
+                            e1.printStackTrace();
+                        } catch (MalformedURLException e1) {
+                            e1.printStackTrace();
+                        } catch (RemoteException e1) {
+                            e1.printStackTrace();
+                        }
+                        try {
+                            factory.createSensor(type_sensor,position,Service,Capacity,Range);
+                        } catch (RemoteException e1) {
+                            e1.printStackTrace();
+                        }
+                        data=fill_table();
+                        updateTable(data,jt,column,model);
+
+                    }
+                });
 
                 d.setVisible(true);
             }
         };
         //action quand on select une ligne du table
+        jt.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+                                                            public void valueChanged(ListSelectionEvent event) {
+                                                                jbt2.setEnabled(true);
+                                                                jbt3.setEnabled(true);
+                                                            }});
 
-        /*jt.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
-            public void valueChanged(ListSelectionEvent event) {
-                // do some actions here, for example
-                // print first column value from selected row
-                row = jt.getSelectedRow();
-                System.out.println("row="+row);
 
-             //   jbt3.setEnabled(true);
-                id = Integer.parseInt(jt.getValueAt(jt.getSelectedRow(), 0).toString());
-                capacity=Integer.parseInt(jt.getValueAt(jt.getSelectedRow(), 2).toString());
-                type=Integer.parseInt(jt.getValueAt(jt.getSelectedRow(), 1).toString());
-                service= Integer.parseInt(jt.getValueAt(jt.getSelectedRow(), 7).toString());
-                 positionX=Integer.parseInt(jt.getValueAt(jt.getSelectedRow(), 8).toString());
-                 positionY=Integer.parseInt(jt.getValueAt(jt.getSelectedRow(), 9).toString());
-                  state=Integer.parseInt(jt.getValueAt(jt.getSelectedRow(), 3).toString());
-                  nbrequest=Integer.parseInt(jt.getValueAt(jt.getSelectedRow(), 4).toString());
-                  request=  Integer.parseInt(jt.getValueAt(jt.getSelectedRow(), 5).toString());
-                  range=Integer.parseInt(jt.getValueAt(jt.getSelectedRow(), 6).toString());
-                System.out.println(jt.getValueAt(jt.getSelectedRow(), 0).toString());
-            }
-        });*/
         // action quand on clique sur executefile
         ActionListener executefile =new ActionListener() {
             @Override
+            //Handle open button action.
             public void actionPerformed(ActionEvent e) {
-                try {
-                    ExecuteFile();
-                } catch (FileNotFoundException e1) {
-                    e1.printStackTrace();
+
+                JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+
+                int returnValue = jfc.showOpenDialog(null);
+                // int returnValue = jfc.showSaveDialog(null);
+
+                if (returnValue == JFileChooser.APPROVE_OPTION) {
+                    File selectedFile = jfc.getSelectedFile();
+                    System.out.println(selectedFile.getAbsolutePath());
+                    String nom_file=selectedFile.getAbsolutePath();
+                    try {
+                        ExecuteFile(nom_file);
+                    } catch (FileNotFoundException e1) {
+                        e1.printStackTrace();
+                    }
                 }
-            }
-        };
+
+            }};
         JScrollPane sp = new JScrollPane(jt);
+        sp.setPreferredSize(new Dimension(700,900));
+        panel.add(sp);
 
-        panel.add(sp,BorderLayout.EAST);
-
-        panel.setBounds(1,1,500,800);
+        panel.setBounds(1,1,700,800);
 
         panel.setBackground(Color.CYAN);
 
@@ -305,8 +341,9 @@ public class Interface extends DefaultTableModel {
         jbt1.addActionListener(printAction1);
 
         jbt2.addActionListener(editSensor);
+        jbt2.setEnabled(false);
         jbt3.setPreferredSize(new Dimension(100,50));
-       // jbt3.setEnabled(false);
+        jbt3.setEnabled(false);
         jbt3.addActionListener( printAction);
         jbt4.addActionListener(requestSink);
         jbt5.addActionListener(executefile);
@@ -322,40 +359,31 @@ public class Interface extends DefaultTableModel {
         box.add(jbt5);
         p1.add(box);
 
-        f.add(panel,BorderLayout.LINE_START);
+       f.add(panel,BorderLayout.LINE_START);
 
         f.add(p1,BorderLayout.CENTER);
-        f.setSize(800, 500);
+       // f.setSize(800, 500);
+        f.setSize(1000,1000);
+        panel.setBounds(0,0,700,1000);
+        p1.setBounds(700,0,300,1000);
         f.setVisible(true);
     }
 
-    public void AddSensor(int type,int service,Point position,int capacity,String typesensor,int range )
-    {
 
-    }
-
-
-    public void ExecuteFile() throws FileNotFoundException {
-        //BufferedReader br = null;
-        //  FileReader fr = null;
-        BufferedReader br = new BufferedReader(new FileReader("C:\\Users\\LENOVO\\Desktop\\simulator.txt"));
+    public void ExecuteFile(String nom_file) throws FileNotFoundException {
+        BufferedReader br = new BufferedReader(new FileReader(nom_file));
         try {
-
-            //br = new BufferedReader(new FileReader(FILENAME));
-            // FileReader  fr = new FileReader("simulator.txt");
-            //     br = new BufferedReader(fr);
 
             String sCurrentLine;
 
             while ((sCurrentLine = br.readLine()) != null) {
+                System.out.println(sCurrentLine);
                 String [] tab=sCurrentLine.split(":");
                 System.out.println("hiiiii");
                 if(tab[0]=="create sensor")
-                {int type=0,service=0,positionx,positiony,range=0,capacity=0;
-                    String typesensor="";
+                {int type=0,service=0,positionx=0,positiony=0,range=0,capacity=0;
+                        String typesensor=null;
                     Point position = null;
-                    positionx=position.x;
-                    positiony=position.y;
                     String [] tab1=tab[1].split(",");
                     for(int i=0;i<tab1.length;i++)
                     {
@@ -383,14 +411,38 @@ public class Interface extends DefaultTableModel {
                             typesensor=tab2[1];
                         if(tab2[0]=="type")
                             type=Integer.parseInt(tab2[1]);
+                        position=new Point(positionx,positiony);
                     }
 
-                    AddSensor(type,service,position,capacity,typesensor,range);
+                    factory=(IFactory) Naming.lookup("rmi://127.0.0.1:1199/Cal");
+                    factory.createSensor(typee,position,Service,Capacity,Range);
+                   data=fill_table();
+                    updateTable(data,jt,column,model);
                 }
                 else
                 if(tab[0]=="edit sensor")
                 {
-                  //  Edit();
+                    String [] tab1=tab[1].split(",");
+                    String id=null;
+                    int type=0,positionx=0,positiony=0,state=0;
+                    for(int i=0;i<tab1.length;i++) {
+                        String[] tab2 = tab[i].split("=");
+                        if(tab2[0]=="positionx")
+                            positionx=Integer.parseInt(tab2[1]);
+                        if(tab2[0]=="type")
+                            type=Integer.parseInt(tab2[1]);
+                        if(tab2[0]=="positiony")
+                            positiony=Integer.parseInt(tab2[1]);
+                        if(tab2[0]=="state")
+                            state=Integer.parseInt(tab2[1]);
+                        if(tab2[0]=="id")
+                            id=tab2[1];
+                    }
+                    Point positionn =new Point(positionx,positiony);
+                    sensor.editSensor(id,typee,positionn,State);
+                       data=fill_table();
+                     updateTable(data,jt,column,model);
+
                 }
                 else
                 if(tab[0]=="delete sensor")
@@ -404,24 +456,26 @@ public class Interface extends DefaultTableModel {
                         }
                     }
                     sensor.deleteSensor(id);
+                    data=fill_table();
+                    updateTable(data,jt,column,model);
                 }
-                else{}
+                else{
+                    System.out.println("gffd");
+                }
             }
 
         } catch (IOException e) {
 
             e.printStackTrace();
 
-        }
-        finally {
+        } catch (NotBoundException e) {
+            e.printStackTrace();
+        } finally {
 
             try {
 
                 if (br != null)
                     br.close();
-
-             /*   if (fr != null)
-                    fr.close();*/
 
             } catch (IOException ex) {
 
@@ -432,7 +486,7 @@ public class Interface extends DefaultTableModel {
 
     }
     //get data descriptor for remplir jtable
-    public String[][] remplir_table()
+    public String[][] fill_table()
     {
         int j=0;
         String[][] data = new String[0][];
