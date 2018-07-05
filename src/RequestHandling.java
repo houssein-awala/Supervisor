@@ -101,6 +101,9 @@ public class RequestHandling extends Thread //By Mohamad Mohyeddine
     private void sendResponse() throws IOException { //By Mohamad Mohyeddine
 
         objectOutputStream=new ObjectOutputStream(socket.getOutputStream());
+        Frame frame = new Frame();
+        frame.data = parms.getDescriptors().get(request.getSelectedSensor()).publicKey.getEncoded();
+        objectOutputStream.writeObject(frame);
         objectOutputStream.writeObject(request);
         objectOutputStream.close();
     }
@@ -109,5 +112,11 @@ public class RequestHandling extends Thread //By Mohamad Mohyeddine
 
     {
         return Math.sqrt(Math.pow((a.getX() - b.getX()), 2) + Math.pow((a.getY() - b.getY()), 2));
+    }
+
+
+    public class Frame implements Serializable {
+        byte[] data;
+
     }
 }

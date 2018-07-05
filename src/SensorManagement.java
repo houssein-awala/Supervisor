@@ -7,6 +7,9 @@ i.e register the descriptor and change the state of the sensor to ready
 after given it an ID
  */
 
+import sun.security.krb5.internal.crypto.Des;
+
+import java.awt.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -29,6 +32,7 @@ public class SensorManagement extends Thread
         this.parms = parms;
         this.sensorSocket = sensorSocket;
         objectInputStream=new ObjectInputStream(sensorSocket.getInputStream());
+        objectOutputStream=new ObjectOutputStream(sensorSocket.getOutputStream());
     }
 
     /*generate id for the sensor,set it in the descriptor ,add descriptor and sensor
@@ -44,6 +48,7 @@ public class SensorManagement extends Thread
         desc.setState(Descriptor.REGISTRED);
         parms.addDescriptor(desc);
         sensor.configure(desc);
+        SendACK();
     }
 
     //get Sensor Reference from TCP connection
@@ -76,15 +81,43 @@ public class SensorManagement extends Thread
             desc.setState(Descriptor.READY);
             parms.addDescriptor(desc);
             sensor.configure(desc);
-            inFormSensor();
+            sensor.setRoutingTable(getNeighbors());
+            SendACK();
         }
     }
 
+    private HashMap<String,Descriptor> getNeighbors()
+    {
+        SinkDistance [] distances=new SinkDistance[parms.getDescriptors().size()];
+        int i=0;
+        for(Map.Entry<String,Descriptor> entry:parms.getDescriptors().entrySet())
+        {
+            double dist=distance(desc.getPosition(),entry.getValue().getPosition());
+            if(desc.getRange()*2>dist)
+            {
+                distances[i] = new SinkDistance(entry.getKey(),dist);
+                i++;
+            }
+        }
+        Arrays.sort(distances);
+        HashMap<String,Descriptor> neighbors=new HashMap<>();
+        for(i=0;i<5;i++)
+            neighbors.put(distances[0].ID,parms.getDescriptors().get(distances[0].ID));
+        return neighbors;
+    }
+
+
+    private double distance(Point a, Point b)
+    {
+        return Math.sqrt(Math.pow((a.getX() - b.getX()), 2) + Math.pow((a.getY() - b.getY()), 2));
+    }
+
+
     //after changing state to ready inform the sensor that it's ready to work
-    private void inFormSensor()
+    private void SendACK()
     {
         try {
-            objectOutputStream=new ObjectOutputStream(sensorSocket.getOutputStream());
+
             objectOutputStream.writeBoolean(true);
         } catch (IOException e) {
             e.printStackTrace();
@@ -102,5 +135,21 @@ public class SensorManagement extends Thread
         waitForSensorSignal();
 
         UpdateSensorState();
+    }
+
+    private class SinkDistance implements Comparable<Double>
+    {
+        String ID;
+        Double distance;
+
+        public SinkDistance(String ID, double distance) {
+            this.ID = ID;
+            this.distance = distance;
+        }
+
+        @Override
+        public int compareTo(Double aDouble) {
+            return distance.compareTo(aDouble);
+        }
     }
 }
